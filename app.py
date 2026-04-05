@@ -1,5 +1,5 @@
 # ======================================================
-# 🚀 ENTERPRISE AI- DL PLATFORM-------------- (DL + AutoML + NLP + Tracking)
+# 🚀 PURE DEEP LEARNING PLATFORM (END-TO-END)
 # ======================================================
 
 import streamlit as st
@@ -7,34 +7,23 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import tensorflow as tf
-import torch
-import re, csv, os
+import re, csv
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, r2_score
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 # ======================================================
 # CONFIG
 # ======================================================
 
 st.set_page_config(layout="wide")
-st.title("🚀 Enterprise AI- DL Analytics Platform")
-
-# ======================================================
-# SESSION STATE (MODEL TRACKING)
-# ======================================================
-
-if "history" not in st.session_state:
-    st.session_state.history = []
+st.title("🚀 Pure Deep Learning AI Platform")
 
 # ======================================================
 # FILE UPLOAD
 # ======================================================
 
-file = st.file_uploader("Upload Dataset", type=["csv","xlsx","txt"])
+file = st.file_uploader("Upload CSV / Excel / TXT", type=["csv","xlsx","txt"])
 
 if file:
 
@@ -42,20 +31,25 @@ if file:
     # LOAD DATA
     # =============================
 
-    if file.name.endswith(".csv"):
-        df = pd.read_csv(file)
+    try:
+        if file.name.endswith(".csv"):
+            df = pd.read_csv(file)
 
-    elif file.name.endswith(".xlsx"):
-        df = pd.read_excel(file)
+        elif file.name.endswith(".xlsx"):
+            df = pd.read_excel(file)
 
-    elif file.name.endswith(".txt"):
-        sample = file.read(1024).decode("utf-8")
-        file.seek(0)
-        dialect = csv.Sniffer().sniff(sample)
-        df = pd.read_csv(file, delimiter=dialect.delimiter)
+        elif file.name.endswith(".txt"):
+            sample = file.read(1024).decode("utf-8")
+            file.seek(0)
+            dialect = csv.Sniffer().sniff(sample)
+            df = pd.read_csv(file, delimiter=dialect.delimiter)
 
-    st.success("✅ Data Loaded")
-    st.dataframe(df.head())
+        st.success("✅ Data Loaded")
+        st.dataframe(df.head())
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+        st.stop()
 
     # =============================
     # CLEANING
@@ -74,60 +68,30 @@ if file:
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df.fillna(0, inplace=True)
 
-    df = df.sample(min(len(df), 4000))
+    df = df.sample(min(len(df), 3000))
 
     # =============================
     # DASHBOARD
     # =============================
 
-    st.subheader("📊 Analytics Dashboard")
+    st.subheader("📊 Data Visualization")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        x = st.selectbox("Feature", df.columns)
-        st.plotly_chart(px.histogram(df, x=x))
-
-    with col2:
-        y = st.selectbox("Target View", df.columns)
-        st.plotly_chart(px.box(df, y=y))
+    x = st.selectbox("Select Feature", df.columns)
+    st.plotly_chart(px.histogram(df, x=x))
 
     # =============================
-    # NLP MODULE
+    # DL MODEL SETUP
     # =============================
 
-    text_cols = df.select_dtypes(include="object").columns
+    st.subheader("🧠 Deep Learning Model")
 
-    if len(text_cols) > 0:
-
-        st.subheader("🧠 NLP Engine")
-
-        text_col = st.selectbox("Text Column", text_cols)
-
-        def clean(t):
-            return re.sub(r'[^a-zA-Z ]','',str(t).lower())
-
-        df["clean_text"] = df[text_col].apply(clean)
-
-        tfidf = TfidfVectorizer(max_features=100)
-        X_text = tfidf.fit_transform(df["clean_text"]).toarray()
-
-        st.write("TF-IDF:", X_text.shape)
-
-    # =============================
-    # AUTOML + DL
-    # =============================
-
-    st.subheader("🤖 AutoML + Deep Learning Engine")
-
-    target = st.selectbox("Select Target", df.columns)
+    target = st.selectbox("Select Target Column", df.columns)
 
     X = pd.get_dummies(df.drop(columns=[target]))
     y = df[target]
 
-    X = StandardScaler().fit_transform(X)
-
-    X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2)
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
 
     # =============================
     # TASK TYPE
@@ -136,89 +100,92 @@ if file:
     if y.dtype == "object":
         task = "classification"
         le = LabelEncoder()
-        y_train = le.fit_transform(y_train)
-        y_test = le.transform(y_test)
+        y = le.fit_transform(y)
+        output_units = len(np.unique(y))
+        activation = "softmax"
+        loss = "sparse_categorical_crossentropy"
     else:
         task = "regression"
+        output_units = 1
+        activation = "linear"
+        loss = "mse"
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
     # =============================
-    # BASE MODEL
-    # =============================
-
-    base_model = RandomForestClassifier() if task=="classification" else RandomForestRegressor()
-    base_model.fit(X_train,y_train)
-
-    base_pred = base_model.predict(X_test)
-
-    base_score = accuracy_score(y_test,base_pred) if task=="classification" else r2_score(y_test,base_pred)
-
-    # =============================
-    # ADVANCED DL MODEL
+    # MODEL ARCHITECTURE
     # =============================
 
     model = tf.keras.Sequential([
         tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.3),
+
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dropout(0.3),
+
         tf.keras.layers.Dense(64, activation='relu'),
+
+        tf.keras.layers.Dense(output_units, activation=activation)
     ])
 
-    if task == "classification":
-        model.add(tf.keras.layers.Dense(len(np.unique(y_train)), activation='softmax'))
-        loss = "sparse_categorical_crossentropy"
-    else:
-        model.add(tf.keras.layers.Dense(1))
-        loss = "mse"
-
-    model.compile(optimizer='adam', loss=loss)
-
-    model.fit(X_train, y_train, epochs=5, batch_size=32, verbose=0)
-
-    dl_pred = model.predict(X_test)
-
-    if task == "classification":
-        dl_pred = np.argmax(dl_pred, axis=1)
-        dl_score = accuracy_score(y_test, dl_pred)
-    else:
-        dl_score = r2_score(y_test, dl_pred)
+    model.compile(optimizer='adam', loss=loss, metrics=['accuracy'] if task=="classification" else ['mae'])
 
     # =============================
-    # MODEL TRACKING
+    # TRAINING
     # =============================
 
-    st.session_state.history.append({
-        "Baseline": base_score,
-        "DeepLearning": dl_score
-    })
+    epochs = st.slider("Epochs", 5, 50, 10)
 
-    # =============================
-    # RESULTS
-    # =============================
+    if st.button("🚀 Train Deep Learning Model"):
 
-    st.subheader("🏆 Model Results")
+        history = model.fit(
+            X_train, y_train,
+            validation_data=(X_test, y_test),
+            epochs=epochs,
+            batch_size=32,
+            verbose=0
+        )
 
-    st.write(f"Baseline Score: {base_score}")
-    st.write(f"Deep Learning Score: {dl_score}")
+        st.success("Training Completed")
 
-    comp_df = pd.DataFrame({
-        "Model":["Baseline","Deep Learning"],
-        "Score":[base_score, dl_score]
-    })
+        # =============================
+        # METRICS VISUALIZATION
+        # =============================
 
-    st.plotly_chart(px.bar(comp_df, x="Model", y="Score"))
+        hist_df = pd.DataFrame(history.history)
 
-    # =============================
-    # MODEL HISTORY
-    # =============================
+        st.subheader("📈 Training Performance")
 
-    st.subheader("📈 Model Tracking")
+        st.line_chart(hist_df)
 
-    hist_df = pd.DataFrame(st.session_state.history)
-    st.dataframe(hist_df)
+        # =============================
+        # EVALUATION
+        # =============================
 
-    st.line_chart(hist_df)
+        loss_val = model.evaluate(X_test, y_test, verbose=0)
+
+        st.subheader("📊 Model Evaluation")
+
+        if task == "classification":
+            st.write(f"Accuracy: {loss_val[1]}")
+        else:
+            st.write(f"MAE: {loss_val[1]}")
+
+        # =============================
+        # PREDICTION
+        # =============================
+
+        st.subheader("🔮 Make Prediction")
+
+        sample_input = X_test[:1]
+        pred = model.predict(sample_input)
+
+        if task == "classification":
+            pred = np.argmax(pred)
+            st.write(f"Predicted Class: {pred}")
+        else:
+            st.write(f"Predicted Value: {pred[0][0]}")
 
 else:
-    st.info("Upload dataset to begin")
+    st.info("Upload dataset to start")
