@@ -3,7 +3,5 @@ pandas
 numpy
 plotly
 scikit-learn
-tensorflow
-torch
-transformers
+tensorflow-cpu
 openpyxl
