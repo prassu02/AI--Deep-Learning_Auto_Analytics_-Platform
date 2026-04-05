@@ -55,21 +55,16 @@ if file:
     # =============================
     # CLEANING
     # =============================
-
-    df = df.drop_duplicates()
-
     for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='ignore')
+    try:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    except:
+        pass
 
-        if pd.api.types.is_numeric_dtype(df[col]):
-            df[col] = df[col].fillna(df[col].median())
-        else:
-            df[col] = df[col].fillna(df[col].mode()[0])
-
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df.fillna(0, inplace=True)
-
-    df = df.sample(min(len(df), 3000))
+    if pd.api.types.is_numeric_dtype(df[col]):
+        df[col] = df[col].fillna(df[col].median())
+    else:
+        df[col] = df[col].fillna(df[col].mode()[0])
 
     # =============================
     # DASHBOARD
