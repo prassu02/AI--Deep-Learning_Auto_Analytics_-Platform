@@ -110,10 +110,16 @@ if file:
     st.subheader("🤖 AutoML + Deep Learning")
 
     target = st.selectbox("Select Target", df.columns)
-
     X = pd.get_dummies(df.drop(columns=[target]))
     y = df[target]
 
+    # Handle infinity
+    X = X.replace([np.inf, -np.inf], np.nan)
+
+    # Fill missing values
+    X = X.fillna(0)
+
+    # Scale
     X = StandardScaler().fit_transform(X)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
