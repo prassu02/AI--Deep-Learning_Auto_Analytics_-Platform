@@ -227,14 +227,6 @@ This project demonstrates:
 ✔ Real-world deployment skills
 ✔ SaaS product thinking
 
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
-
 ## 🚀 If You Like This Project
 
 Give it a ⭐ on GitHub and share it!
